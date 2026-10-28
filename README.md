@@ -10,6 +10,10 @@ Baixe a [última release](https://github.com/C2S-Business/smartconnect-v2-gravad
 - **Windows:** `SmartConnect-V2-Gravador-Windows-Setup.exe`. Instala no perfil do usuário e cria um atalho no menu Iniciar.
 - **macOS:** `SmartConnect-V2-Gravador-macOS.dmg`. Arraste o aplicativo para Applications. O app é assinado e notarizado pela C2S Business.
 
+No Mac com Apple Silicon, o AVRDUDE incluído requer Rosetta. No Windows, o
+instalador ainda não tem assinatura de código e o SmartScreen pode pedir
+confirmação.
+
 Ao abrir pela primeira vez, use **Importar firmware privado...** para escolher
 o `.hex` oficial recebido da C2S. Conecte a placa via USB, selecione a porta,
 clique em **Preparar**, pressione e solte **RESET** na placa e clique em
