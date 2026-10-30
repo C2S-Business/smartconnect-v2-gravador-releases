@@ -1,0 +1,34 @@
+name: Testar gravador Windows 1.2.1
+on:
+  push:
+    branches: [test/installer-121]
+permissions:
+  contents: read
+jobs:
+  instalar:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Baixar e conferir instalador público
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/C2S-Business/smartconnect-v2-gravador-releases/releases/download/v1.2.1/SmartConnect-V2-Gravador-Windows-Setup.exe'
+          Invoke-WebRequest -Uri $url -OutFile installer.exe
+          $hash = (Get-FileHash installer.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne 'd4547b0143a91fc28dc26c9129c0fa5898d27d3b259a35637021ccbc2d510d2f') { throw "SHA256 divergente: $hash" }
+      - name: Instalar e iniciar a interface
+        shell: pwsh
+        run: |
+          $installer = Start-Process -FilePath (Join-Path $PWD 'installer.exe') -ArgumentList '--quiet' -PassThru -Wait
+          if ($installer.ExitCode -ne 0) { throw "Instalador saiu com código $($installer.ExitCode)" }
+          $appPath = Join-Path $env:LOCALAPPDATA 'Programs\SmartConnect V2 Gravador\SmartConnect V2 Gravador.exe'
+          $shortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\SmartConnect V2 Gravador.lnk'
+          if (-not (Test-Path $appPath)) { throw 'Aplicativo não foi instalado' }
+          if (-not (Test-Path $shortcut)) { throw 'Atalho não foi criado' }
+          $app = Start-Process -FilePath $appPath -PassThru
+          Start-Sleep -Seconds 6
+          $children = @(Get-CimInstance Win32_Process -Filter 'name = "powershell.exe"' | Where-Object { $_.ParentProcessId -eq $app.Id -and $_.CommandLine -like '*ui.ps1*' })
+          if ($children.Count -eq 0) { throw 'A interface PowerShell não abriu ou encerrou ao iniciar' }
+          Write-Output "Instalador OK; aplicativo e interface ativos (PID $($app.Id))"
+          $children | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+          Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue
